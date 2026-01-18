@@ -86,7 +86,11 @@ export class UploadService {
     // Generate unique key
     const timestamp = Date.now();
     const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `admin/uploads/images/${timestamp}-${sanitizedFileName}`;
+    const basePath = process.env.S3_BASE_PATH || '';
+
+const key = basePath
+  ? `${basePath}/admin/uploads/images/${timestamp}-${sanitizedFileName}`
+  : `admin/uploads/images/${timestamp}-${sanitizedFileName}`;
 
     // Upload to S3
     await this.s3.send(
@@ -134,7 +138,11 @@ export class UploadService {
     // Generate unique key
     const timestamp = Date.now();
     const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `admin/uploads/videos/${timestamp}-${sanitizedFileName}`;
+    const basePath = process.env.S3_BASE_PATH || '';
+
+const key = basePath
+  ? `${basePath}/admin/uploads/videos/${timestamp}-${sanitizedFileName}`
+  : `admin/uploads/videos/${timestamp}-${sanitizedFileName}`;
 
     // Upload to S3
     await this.s3.send(
@@ -190,7 +198,11 @@ export class UploadService {
     // Generate unique key
     const timestamp = Date.now();
     const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `admin/uploads/files/${timestamp}-${sanitizedFileName}`;
+    const basePath = process.env.S3_BASE_PATH || '';
+
+const key = basePath
+  ? `${basePath}/admin/uploads/files/${timestamp}-${sanitizedFileName}`
+  : `admin/uploads/files/${timestamp}-${sanitizedFileName}`;
 
     // Upload to S3
     await this.s3.send(
