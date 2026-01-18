@@ -34,8 +34,8 @@ async function bootstrap() {
 
   // Swagger setup
   const config = new DocumentBuilder()
-    .setTitle('Tax Firm Together API')
-    .setDescription('세무법인 투게더 백오피스 API 문서')
+    .setTitle('Consulting Firm API')
+    .setDescription('컨설팅 투게더 백오피스 API 문서')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
