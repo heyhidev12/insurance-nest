@@ -9,10 +9,9 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
   constructor(private readonly adminAuthService: AdminAuthService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
+        // Allow both Authorization: Bearer and cookie-based auth
         ExtractJwt.fromAuthHeaderAsBearerToken(),
-        (request: Request) => {
-          return request?.cookies?.access_token;
-        },
+        (request: Request) => request?.cookies?.accessToken,
       ]),
       secretOrKey: process.env.ADMIN_JWT_SECRET || 'admin-dev-secret',
     });

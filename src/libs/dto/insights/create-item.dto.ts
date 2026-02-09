@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDefined, IsNotEmpty, IsNumber, IsOptional, IsObject, IsString, MaxLength, IsArray, ArrayMaxSize, ValidateNested, ArrayMinSize } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsBoolean, IsDefined, IsNotEmpty, IsNumber, IsOptional, IsObject, IsString, MaxLength, IsArray, ArrayMaxSize } from 'class-validator';
 
 export class CreateItemDto {
   @ApiProperty({ example: '2024년 세무 개편 사항', description: '아이템 제목' })
@@ -28,6 +27,14 @@ export class CreateItemDto {
   @IsNumber({}, { message: '서브카테고리 ID는 숫자여야 합니다.' })
   subcategoryId: number;
 
+  @ApiPropertyOptional({ 
+    example: 1, 
+    description: 'Business area category id where majorCategory === selected subcategory' 
+  })
+  @IsNotEmpty({ message: '서브카테고리를 선택해주세요.' })
+  @IsNumber({}, { message: '서브마이너카테고리 ID는 숫자여야 합니다.' })
+  subMinorCategoryId: number;
+
   @ApiProperty({
     example: { id: 10, url: 'https://example.com/thumbnail.jpg' },
     description: '썸네일 이미지 (필수)'
@@ -45,7 +52,7 @@ export class CreateItemDto {
     description: '첨부 파일 배열 (필수) - 파일 ID 배열 (IMAGE, PDF, VIDEO 등)'
   })
   @IsDefined({ message: '파일을 업로드해주세요.' })
-  @IsNotEmpty({ message: '파일을 업로드해주세요.' })
+  @IsOptional()
   @IsArray({ message: '파일은 배열이어야 합니다.' })
   @ArrayMaxSize(100, { message: '최대 100개의 파일을 업로드할 수 있습니다.' })
   files: Array<{ id: number } | { id: number; url?: string; type?: string }>;
@@ -65,19 +72,8 @@ export class CreateItemDto {
   @IsBoolean()
   enableComments?: boolean;
 
-  @ApiPropertyOptional({ example: 'N', description: '댓글 라벨', default: 'N' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  commentsLabel?: string;
-
-  @ApiPropertyOptional({ example: 'Y', description: '노출 라벨', default: 'Y' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  exposedLabel?: string;
-
 }
+
 
 
 

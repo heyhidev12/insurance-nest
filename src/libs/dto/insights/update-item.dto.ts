@@ -23,6 +23,14 @@ export class UpdateItemDto {
   @IsNumber({}, { message: '서브카테고리 ID는 숫자여야 합니다.' })
   subcategoryId?: number;
 
+  @ApiPropertyOptional({ 
+    example: 1, 
+    description: 'Business area category id where majorCategory === selected subcategory' 
+  })
+  @IsOptional()
+  @IsNumber({}, { message: '서브마이너카테고리 ID는 숫자여야 합니다.' })
+  subMinorCategoryId?: number;
+
   @ApiPropertyOptional({
     example: { id: 10, url: 'https://example.com/thumbnail.jpg' },
     description: '썸네일 이미지'
@@ -48,12 +56,6 @@ export class UpdateItemDto {
   @IsBoolean()
   enableComments?: boolean;
 
-  @ApiPropertyOptional({ example: 'N', description: '댓글 라벨' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  commentsLabel?: string;
-
    @ApiPropertyOptional({ example: true, description: '메인 노출 여부' })
   @IsOptional()
   @IsBoolean()
@@ -64,11 +66,6 @@ export class UpdateItemDto {
   @IsBoolean()
   isExposed?: boolean;
 
-  @ApiPropertyOptional({ example: 'Y', description: '노출 라벨' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  exposedLabel?: string;
 
   
 }

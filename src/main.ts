@@ -28,14 +28,15 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+    origin: ['http://13.124.98.132', 'http://13.124.98.132:3002'],
     credentials: true,
   });
+  
 
   // Swagger setup
   const config = new DocumentBuilder()
-    .setTitle('Consulting Firm API')
-    .setDescription('컨설팅 투게더 백오피스 API 문서')
+    .setTitle('Tax Firm Together API')
+    .setDescription('세무법인 투게더 백오피스 API 문서')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },

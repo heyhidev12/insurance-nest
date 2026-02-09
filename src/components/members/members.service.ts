@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Member } from 'src/libs/entity/member.entity';
 import { Consultation } from 'src/libs/entity/consultation.entity';
-import { In, Repository } from 'typeorm';
+import { NewsletterSubscriber } from 'src/libs/entity/newsletter-subscriber.entity';
+import { In, Repository, DataSource } from 'typeorm';
 import { MemberStatus, MemberType } from 'src/libs/enums/members.enum';
 import * as bcrypt from 'bcrypt';
 import { AdminUpdateMemberDto } from 'src/libs/dto/admin/admin-update-member.dto';
@@ -35,6 +36,10 @@ export class MembersService {
     private readonly memberRepo: Repository<Member>,
     @InjectRepository(Consultation)
     private readonly consultationRepo: Repository<Consultation>,
+    @InjectRepository(NewsletterSubscriber)
+    private readonly newsletterSubscriberRepo: Repository<NewsletterSubscriber>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) { }
 
   findByLoginId(loginId: string) {
@@ -47,6 +52,34 @@ export class MembersService {
 
   findByPhoneNumber(phoneNumber: string) {
     return this.memberRepo.findOne({ where: { phoneNumber } });
+  }
+
+  // Methods for checking uniqueness during signup/registration (excludes WITHDRAWN users)
+  findActiveByLoginId(loginId: string) {
+    return this.memberRepo.findOne({ 
+      where: { 
+        loginId, 
+        status: MemberStatus.ACTIVE 
+      } 
+    });
+  }
+
+  findActiveByEmail(email: string) {
+    return this.memberRepo.findOne({ 
+      where: { 
+        email, 
+        status: MemberStatus.ACTIVE 
+      } 
+    });
+  }
+
+  findActiveByPhoneNumber(phoneNumber: string) {
+    return this.memberRepo.findOne({ 
+      where: { 
+        phoneNumber, 
+        status: MemberStatus.ACTIVE 
+      } 
+    });
   }
 
   create(data: Partial<Member>) {
@@ -118,26 +151,19 @@ export class MembersService {
 
     const [items, total] = await qb.getManyAndCount();
 
-    const formattedItems = items.map((m, index) => {
-      const no = sort === 'latest'
-        ? total - ((page - 1) * limit + index)
-        : (page - 1) * limit + index + 1;
-
-      return {
-        no,
-        id: m.id,
-        memberType: m.memberType,
-        loginId: m.loginId,
-        name: m.name,
-        email: m.email,
-        phoneNumber: m.phoneNumber,
-        newsletterSubscribed: m.newsletterSubscribed,
-        isApproved: m.isApproved,
-        status: m.status,
-        affiliation: m.affiliation,
-        createdAt: m.createdAt,
-      };
-    });
+    const formattedItems = items.map((m) => ({
+      id: m.id,
+      memberType: m.memberType,
+      loginId: m.loginId,
+      name: m.name,
+      email: m.email,
+      phoneNumber: m.phoneNumber,
+      newsletterSubscribed: m.newsletterSubscribed,
+      isApproved: m.isApproved,
+      status: m.status,
+      affiliation: m.affiliation,
+      createdAt: m.createdAt,
+    }));
 
     return {
       items: formattedItems,
@@ -159,15 +185,18 @@ export class MembersService {
       take: limit,
     });
 
-    const formattedItems = items.map((m, index) => ({
-      no: total - ((page - 1) * limit + index),
+    // Use same formatting as adminList to ensure response shape consistency (without row number)
+    const formattedItems = items.map((m) => ({
       id: m.id,
+      memberType: m.memberType,
       loginId: m.loginId,
       name: m.name,
       email: m.email,
       phoneNumber: m.phoneNumber,
-      affiliation: m.affiliation,
+      newsletterSubscribed: m.newsletterSubscribed,
       isApproved: m.isApproved,
+      status: m.status,
+      affiliation: m.affiliation,
       createdAt: m.createdAt,
     }));
 
@@ -210,20 +239,20 @@ export class MembersService {
   }
 
   async adminCreate(data: CreateMemberData) {
-    // Check loginId uniqueness
-    const existingLoginId = await this.findByLoginId(data.loginId);
+    // Check loginId uniqueness (only against ACTIVE users)
+    const existingLoginId = await this.findActiveByLoginId(data.loginId);
     if (existingLoginId) {
       throw new BadRequestException('이미 사용 중인 아이디입니다.');
     }
 
-    // Check email uniqueness
-    const existingEmail = await this.findByEmail(data.email);
+    // Check email uniqueness (only against ACTIVE users)
+    const existingEmail = await this.findActiveByEmail(data.email);
     if (existingEmail) {
       throw new BadRequestException('이미 등록된 이메일입니다.');
     }
 
-    // Check phoneNumber uniqueness
-    const existingPhone = await this.findByPhoneNumber(data.phoneNumber);
+    // Check phoneNumber uniqueness (only against ACTIVE users)
+    const existingPhone = await this.findActiveByPhoneNumber(data.phoneNumber);
     if (existingPhone) {
       throw new BadRequestException('이미 등록된 휴대폰 번호입니다.');
     }
@@ -275,17 +304,17 @@ export class MembersService {
   async adminUpdate(id: number, dto: AdminUpdateMemberDto) {
     const member = await this.findById(id);
 
-    // Validate email uniqueness if being updated
+    // Validate email uniqueness if being updated (only against ACTIVE users)
     if (dto.email !== undefined && dto.email !== member.email) {
-      const existingEmail = await this.findByEmail(dto.email);
+      const existingEmail = await this.findActiveByEmail(dto.email);
       if (existingEmail && existingEmail.id !== id) {
         throw new BadRequestException('이미 등록된 이메일입니다.');
       }
     }
 
-    // Validate phoneNumber uniqueness if being updated
+    // Validate phoneNumber uniqueness if being updated (only against ACTIVE users)
     if (dto.phoneNumber !== undefined && dto.phoneNumber !== member.phoneNumber) {
-      const existingPhone = await this.findByPhoneNumber(dto.phoneNumber);
+      const existingPhone = await this.findActiveByPhoneNumber(dto.phoneNumber);
       if (existingPhone && existingPhone.id !== id) {
         throw new BadRequestException('이미 등록된 휴대폰 번호입니다.');
       }
@@ -316,7 +345,55 @@ export class MembersService {
       member.isApproved = dto.isApproved;
     }
 
-    await this.memberRepo.save(member);
+    // Sync newsletter subscription status with newsletter table using transaction
+    if (dto.newsletterSubscribed !== undefined) {
+      await this.dataSource.transaction(async (transactionalEntityManager) => {
+        // Step 1: Update member table
+        await transactionalEntityManager.save(Member, member);
+
+        // Step 2: Sync newsletter table
+        const memberEmail = dto.email !== undefined ? dto.email : member.email;
+        if (memberEmail) {
+          let newsletterRecord = await transactionalEntityManager.findOne(NewsletterSubscriber, {
+            where: { email: memberEmail },
+          });
+
+          if (dto.newsletterSubscribed === true) {
+            // Create or update newsletter record
+            if (newsletterRecord) {
+              newsletterRecord.isSubscribed = true;
+              newsletterRecord.subscribedAt = newsletterRecord.subscribedAt || new Date();
+              newsletterRecord.unsubscribedAt = null;
+              newsletterRecord.isMailSynced = true;
+              await transactionalEntityManager.save(NewsletterSubscriber, newsletterRecord);
+            } else {
+              // Create new newsletter record
+              const newSubscriber = transactionalEntityManager.create(NewsletterSubscriber, {
+                email: memberEmail,
+                name: member.name,
+                isSubscribed: true,
+                subscribedAt: new Date(),
+                unsubscribedAt: null,
+                isMailSynced: true,
+              });
+              await transactionalEntityManager.save(NewsletterSubscriber, newSubscriber);
+            }
+          } else {
+            // Update newsletter record to unsubscribed (do NOT delete)
+            if (newsletterRecord) {
+              newsletterRecord.isSubscribed = false;
+              newsletterRecord.unsubscribedAt = new Date();
+              newsletterRecord.isMailSynced = true;
+              await transactionalEntityManager.save(NewsletterSubscriber, newsletterRecord);
+            }
+          }
+        }
+      });
+    } else {
+      // No newsletter subscription change, just save member
+      await this.memberRepo.save(member);
+    }
+
     return this.adminGetOne(id);
   }
 

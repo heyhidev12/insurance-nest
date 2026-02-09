@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'insurance-backend',
+      name: 'insurance-nest',
 
       script: 'dist/main.js',
 

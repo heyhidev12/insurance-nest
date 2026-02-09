@@ -35,7 +35,7 @@ export class EmailProvider {
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
-      subject: '[Together] 인증번호',
+      subject: '[모두컨설팅] 인증번호',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">인증번호 안내</h2>

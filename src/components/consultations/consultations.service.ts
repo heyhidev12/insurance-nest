@@ -86,6 +86,8 @@ export class ConsultationsService {
       answer: c.answer,
       status: c.status,
       createdAt: c.createdAt,
+      answeredAt: c.answeredAt,
+      updatedAt: c.updatedAt,
     }));
 
     return { items: mapped, total, page, limit };
@@ -163,27 +165,21 @@ export class ConsultationsService {
 
     const [items, total] = await qb.getManyAndCount();
 
-    // 응답 포맷: No, 이름, 상담분야, 담당 세무사, 휴대폰 번호, 상담 내용 전체, 답변, 회원유형, 신청일시
-    // 번호는 정렬 순서에 따라 순차적으로 부여 (최신순: 큰 번호부터, 오래된순: 작은 번호부터)
-    const formattedItems = items.map((c, index) => {
-      const no = sort === 'latest'
-        ? total - ((page - 1) * limit + index)
-        : (page - 1) * limit + index + 1;
-
-      return {
-        no,
-        id: c.id,
-        name: c.name,
-        consultingField: c.consultingField,
-        assignedTaxAccountant: c.assignedTaxAccountant || '-',
-        phoneNumber: c.phoneNumber,
-        content: c.content,
-        answer: c.answer,
-        memberFlag: c.memberFlag,
-        status: c.status,
-        createdAt: c.createdAt,
-      };
-    });
+    // 응답 포맷: row number는 프론트엔드에서 계산
+    const formattedItems = items.map((c) => ({
+      id: c.id,
+      name: c.name,
+      consultingField: c.consultingField,
+      assignedTaxAccountant: c.assignedTaxAccountant || '-',
+      phoneNumber: c.phoneNumber,
+      content: c.content,
+      answer: c.answer,
+      memberFlag: c.memberFlag,
+      status: c.status,
+      createdAt: c.createdAt,
+      answeredAt: c.answeredAt,
+      updatedAt: c.updatedAt,
+    }));
 
     return {
       items: formattedItems,
@@ -220,6 +216,7 @@ export class ConsultationsService {
 
     entity.answer = answer;
     entity.status = status;
+    entity.answeredAt = new Date();
     const saved = await this.consultationRepo.save(entity);
 
     // passwordHash 제외하고 반환
@@ -301,6 +298,10 @@ export class ConsultationsService {
         statusLabel: item.status === ConsultationStatus.PENDING ? '신청완료' : '상담완료',
         createdAt: item.createdAt,
         createdAtFormatted: this.formatDateTime(item.createdAt),
+        answeredAt: item.answeredAt ?? null,
+        answeredAtFormatted: item.answeredAt ? this.formatDateTime(item.answeredAt) : null,
+        updatedAt: item.updatedAt,
+        updatedAtFormatted: item.updatedAt ? this.formatDateTime(item.updatedAt) : null,
       };
     });
 

@@ -38,7 +38,8 @@ export class AdminAuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies['refresh_token'];
+    // Read refresh token from cookie
+    const refreshToken = req.cookies['refreshToken'];
     if (!refreshToken) {
       throw new UnauthorizedException('리프레시 토큰이 없습니다.');
     }
@@ -56,8 +57,8 @@ export class AdminAuthController {
   @ApiResponse({ status: 200, description: '로그아웃 성공' })
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token', { path: '/admin/auth/refresh' });
+    res.clearCookie('accessToken', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
     return { success: true };
   }
 
@@ -88,22 +89,16 @@ export class AdminAuthController {
   }
 
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    const isProd = process.env.NODE_ENV === 'production';
-
-    res.cookie('access_token', accessToken, {
+    const cookieBaseOptions = {
       httpOnly: true,
-      secure: true, // Always secure as per request (or isProd ? true : true)
-      sameSite: 'none',
+      secure: false,     // HTTP => false
+      sameSite: 'lax' as const,
       path: '/',
-      maxAge: 30 * 60 * 1000, // 30 minutes
-    });
-
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      path: '/admin/auth/refresh',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
+      // domain: undefined
+    };
+  
+    res.cookie('accessToken', accessToken, { ...cookieBaseOptions, maxAge: 30 * 60 * 1000 });
+    res.cookie('refreshToken', refreshToken, { ...cookieBaseOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
   }
+  
 }

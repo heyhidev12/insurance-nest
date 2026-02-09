@@ -28,7 +28,6 @@ import { UploadModule } from './libs/upload/upload.module';
         synchronize: true,
         logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
         connectTimeout: 10000, // 10 seconds
-        acquireTimeout: 10000,
         extra: {
           connectionLimit: 10,
         },
