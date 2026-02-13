@@ -25,6 +25,7 @@ import { BusinessAreaService } from '../services/business-area.service';
 import { HistoryService } from '../services/history.service';
 import { InsightsService } from '../services/insights.service';
 import { ApplySeminarDto } from 'src/libs/dto/training-seminar/apply-seminar.dto';
+import { ApplicationStatus } from 'src/libs/entity/training-seminar.entity';
 import { ExposureSettingsService } from '../services/exposure-settings.service';
 import { FooterPolicyService } from '../services/footer-policy.service';
 import { FamilySiteService } from '../services/family-site.service';
@@ -241,6 +242,7 @@ export class PublicContentController {
     // Get viewer context: memberType and isApproved (nullable for guests)
     let memberType: string | null = null;
     let isApproved: boolean | null = null;
+    let applicationStatus: ApplicationStatus | null = null;
 
     if (req.user?.sub) {
       // Fetch member to get memberType and isApproved from database
@@ -248,11 +250,20 @@ export class PublicContentController {
       if (user) {
         memberType = user.memberType;
         isApproved = user.isApproved;
+
+        // Check user's application status for this seminar
+        const application = await this.trainingSeminarService.getUserApplication(id, user.email);
+        if (application) {
+          applicationStatus = application.status;
+        }
       }
     }
 
-    // Authorization logic: Only INSURANCE + approved can view video
-    const canViewVideo = memberType === 'INSURANCE' && isApproved === true;
+    // Authorization logic: Only INSURANCE + approved + CONFIRMED application can view video
+    const canViewVideo =
+      memberType === 'INSURANCE' &&
+      isApproved === true &&
+      applicationStatus === ApplicationStatus.CONFIRMED;
 
     // Response mapping: Return vimeoVideoUrl only if user can view, otherwise null
     return {
